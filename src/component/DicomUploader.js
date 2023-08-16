@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import DicomInfo from './DicomInfo';
-import DicomImage from './DicomImage'; 
+import ImageLabelTool from './ImageLabelTool'; 
 
 
 function DicomUploader() {
@@ -28,8 +28,8 @@ function DicomUploader() {
   };
 
   return (
-    <div className="mt-5 ms-5">
-      <div className="col">
+    <div className="mt-5 ms-5 d-flex ">
+      <div className="col-2">
         <input
           type="file"
           accept=".dcm"
@@ -44,7 +44,9 @@ function DicomUploader() {
           age={age}
           sex={sex}
         />
-        {selectedFile && <DicomImage image={selectedFile} />}
+      </div>
+      <div className='col-10'>
+        {selectedFile && <ImageLabelTool image={selectedFile} />}
       </div>
     </div>
   );
