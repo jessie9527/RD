@@ -8,6 +8,7 @@ function ImageLabelTool({ image }) {
   const [startPoint, setStartPoint] = useState(null);
   const canvasRef = useRef(null);
   const [dicomImageData, setDicomImageData] = useState(null);
+  const [movingLabelIndex, setMovingLabelIndex] = useState(null);
 
   const loadDicomImage = () => {
     const canvas = canvasRef.current;
@@ -47,7 +48,6 @@ function ImageLabelTool({ image }) {
   }, [image]);
   
   const handleAddLabel = () => {
-    // 創建新標籤並使用計數器
     const newLabel = {
       name: `Label${labelCounter}`,
       x: 50, 
@@ -60,10 +60,7 @@ function ImageLabelTool({ image }) {
   };
 
   const handleEditLabel = (index) => {
-    // 這裡可以添加編輯標籤的邏輯
-    const editedLabels = [...labels];
-    editedLabels[index].x += 10;
-    setLabels(editedLabels);
+    setMovingLabelIndex(index);
   };
 
   const handleDeleteLabel = (index) => {
@@ -72,34 +69,49 @@ function ImageLabelTool({ image }) {
   };
 
   const handleMouseDown = (e) => {
-    setDrawing(true);
-    setStartPoint({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY });
+    const mouseX = e.nativeEvent.offsetX;
+    const mouseY = e.nativeEvent.offsetY;
+
+    // 檢查是否點擊了某一個 label
+    const clickedLabelIndex = labels.findIndex(label => 
+        mouseX >= label.x && mouseX <= label.x + label.width &&
+        mouseY >= label.y && mouseY <= label.y + label.height
+    );
+
+    if (clickedLabelIndex !== -1) {
+        setMovingLabelIndex(clickedLabelIndex);
+    } else {
+        // 其他原有的代碼
+        setDrawing(true);
+        setStartPoint({ x: mouseX, y: mouseY });
+    }
   };
 
-  const handleMouseUp = (e) => {
-    if (drawing && startPoint) {
-      const endPoint = { x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY };
-      const newLabel = {
-        name: `Label${labelCounter}`,
-        x: Math.min(startPoint.x, endPoint.x),
-        y: Math.min(startPoint.y, endPoint.y),
-        width: Math.abs(startPoint.x - endPoint.x),
-        height: Math.abs(startPoint.y - endPoint.y),
-      };
-      setLabels([...labels, newLabel]);
-      setLabelCounter(labelCounter + 1);
+  const handleMouseMove = (e) => {
+    if (movingLabelIndex !== null) {
+        const mouseX = e.nativeEvent.offsetX;
+        const mouseY = e.nativeEvent.offsetY;
+
+        // 更新 label 的位置
+        const updatedLabels = [...labels];
+        updatedLabels[movingLabelIndex].x = mouseX;
+        updatedLabels[movingLabelIndex].y = mouseY;
+        setLabels(updatedLabels);
     }
+};
+
+  const handleMouseUp = (e) => {
+    setMovingLabelIndex(null);
     setDrawing(false);
     setStartPoint(null);
   };
 
   const drawLabels = () => {
-    if (!canvasRef.current) return; // 檢查 canvas 是否存在
+    if (!canvasRef.current) return; 
   
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     
-    // 清空畫布
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   
     // 先繪製DICOM圖像
@@ -107,8 +119,8 @@ function ImageLabelTool({ image }) {
         ctx.putImageData(dicomImageData, 0, 0);
     }
   
-    // 然後在圖像上渲染標籤
-    ctx.fillStyle = "white";  // 設定文字顏色為白色
+    // 在圖像上渲染標籤
+    ctx.fillStyle = "white"; 
     ctx.strokeStyle = "white"; 
     labels.forEach(label => {
       ctx.strokeRect(label.x, label.y, label.width, label.height);
@@ -117,7 +129,7 @@ function ImageLabelTool({ image }) {
   
   useEffect(() => {
     drawLabels();
-  }, [labels, dicomImageData]); // 添加 dicomImageData 到依賴  
+  }, [labels, dicomImageData]); 
 
   return (
     <div className='d-flex'>
@@ -126,6 +138,7 @@ function ImageLabelTool({ image }) {
           ref={canvasRef} 
           onMouseDown={handleMouseDown} 
           onMouseUp={handleMouseUp}
+          onMouseMove={handleMouseMove}
         />
       </div>
       <div className='col-6'>
